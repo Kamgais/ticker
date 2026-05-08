@@ -1,7 +1,7 @@
 import axios, { type AxiosInstance, AxiosError } from 'axios'
 import type { TickerEntry, CreateEntryPayload, UpdateEntryPayload } from '@/types/ticker'
 
-const BASE_URL = 'http://localhost:8080'
+const BASE_URL = ''
 const MAX_RETRIES = 3
 const RETRY_DELAY_MS = 1000
 

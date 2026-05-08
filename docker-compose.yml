@@ -11,11 +11,6 @@ services:
     ports:
       - "8080:8080"
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/api/ticker"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # ── Vue Frontend ────────────────────────────────────
   frontend:
@@ -26,6 +21,5 @@ services:
     ports:
       - "80:80"
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     restart: unless-stopped
