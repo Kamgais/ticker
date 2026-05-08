@@ -57,17 +57,20 @@ export const useTickerStore = defineStore('ticker', () => {
     return sortedEntries.value.slice(start, end)
   })
 
-  async function fetchEntries() {
-    status.value = 'loading'
-    errorMessage.value = null
-    try {
-      entries.value = await tickerApi.getEntries()
-      status.value = 'success'
-    } catch (e) {
-      status.value = 'error'
-      errorMessage.value = (e as Error).message
-    }
+async function fetchEntries() {
+  status.value = 'loading'
+  errorMessage.value = null
+  try {
+    const all = await tickerApi.getEntries()
+    // Nur aktive Einträge anzeigen
+    entries.value = all.filter(e => e.active)
+    status.value = 'success'
+  } catch (e) {
+    status.value = 'error'
+    errorMessage.value = (e as Error).message
   }
+}
+
 
   async function createEntry(payload: CreateEntryPayload) {
     try {

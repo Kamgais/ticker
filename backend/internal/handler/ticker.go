@@ -33,6 +33,7 @@ func New(c *cache.Cache) *TickerHandler {
 func (h *TickerHandler) GetEntries(w http.ResponseWriter, r *http.Request) {
 	cacheKey := fmt.Sprintf("ticker:%s", tickerName)
 
+	// Cache prüfen
 	if cached, found := h.cache.Get(cacheKey); found {
 		log.Println("[CACHE HIT] GET /ticker")
 		w.Header().Set("Content-Type", "application/json")
@@ -41,6 +42,7 @@ func (h *TickerHandler) GetEntries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Upstream API aufrufen
 	log.Println("[CACHE MISS] GET /ticker — rufe upstream API")
 	url := fmt.Sprintf("%s/ticker/?tickernames=%s", upstreamURL, tickerName)
 	resp, err := h.httpClient.Get(url)
@@ -56,8 +58,26 @@ func (h *TickerHandler) GetEntries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.cache.Set(cacheKey, body)
+	// Nur aktive Einträge zurückgeben
+	var allEntries []map[string]interface{}
+	if err := json.Unmarshal(body, &allEntries); err == nil {
+		activeEntries := []map[string]interface{}{}
+		for _, entry := range allEntries {
+			if active, ok := entry["active"].(bool); ok && active {
+				activeEntries = append(activeEntries, entry)
+			}
+		}
+		filteredBody, _ := json.Marshal(activeEntries)
+		h.cache.Set(cacheKey, filteredBody)
 
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "MISS")
+		w.Write(filteredBody)
+		return
+	}
+
+	// Fallback: ungefiltert zurückgeben
+	h.cache.Set(cacheKey, body)
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Cache", "MISS")
 	w.Write(body)
@@ -134,6 +154,8 @@ func (h *TickerHandler) UpdateEntry(w http.ResponseWriter, r *http.Request) {
 	w.Write(respBody)
 }
 
+// DeleteEntry — simuliert Loeschen via PATCH mit active: false
+// Die externe API unterstuetzt kein DELETE
 func (h *TickerHandler) DeleteEntry(w http.ResponseWriter, r *http.Request) {
 	tickerID := r.PathValue("id")
 	if tickerID == "" {
@@ -141,10 +163,48 @@ func (h *TickerHandler) DeleteEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req, _ := http.NewRequest(http.MethodDelete,
-		fmt.Sprintf("%s/ticker/%s/", upstreamURL, tickerID),
-		nil,
+	// Eintrag aus Cache oder API laden
+	cacheKey := fmt.Sprintf("ticker:%s", tickerName)
+	var entries []map[string]interface{}
+
+	if cached, found := h.cache.Get(cacheKey); found {
+		json.Unmarshal(cached, &entries)
+	} else {
+		url := fmt.Sprintf("%s/ticker/?tickernames=%s", upstreamURL, tickerName)
+		resp, err := h.httpClient.Get(url)
+		if err != nil {
+			http.Error(w, `{"error": "Upstream nicht erreichbar"}`, http.StatusBadGateway)
+			return
+		}
+		defer resp.Body.Close()
+		body, _ := io.ReadAll(resp.Body)
+		json.Unmarshal(body, &entries)
+	}
+
+	// Eintrag anhand der ID finden
+	var target map[string]interface{}
+	for _, entry := range entries {
+		id, _ := entry["ticker_id"].(float64)
+		if fmt.Sprintf("%d", int(id)) == tickerID {
+			target = entry
+			break
+		}
+	}
+
+	if target == nil {
+		http.Error(w, `{"error": "Eintrag nicht gefunden"}`, http.StatusNotFound)
+		return
+	}
+
+	// active: false setzen — alle Pflichtfelder mitschicken
+	target["active"] = false
+
+	body, _ := json.Marshal(target)
+	req, _ := http.NewRequest(http.MethodPatch,
+		fmt.Sprintf("%s/ticker/", upstreamURL),
+		bytes.NewBuffer(body),
 	)
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := h.httpClient.Do(req)
 	if err != nil {
@@ -153,9 +213,11 @@ func (h *TickerHandler) DeleteEntry(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	h.cache.Invalidate(fmt.Sprintf("ticker:%s", tickerName))
+	// Cache invalidieren
+	h.cache.Invalidate(cacheKey)
 
-	w.WriteHeader(resp.StatusCode)
+	log.Printf("[DELETE] Eintrag %s auf active:false gesetzt", tickerID)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func validateCreatePayload(payload map[string]interface{}) error {
