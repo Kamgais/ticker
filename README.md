@@ -518,7 +518,6 @@ schnell, deterministisch und unabhängig von der externen API.
 | GitHub Actions CI/CD | Tests + Build + DockerHub Push bei jedem Commit |
 | DockerHub Images | Automatisch gepusht mit latest + git-sha Tags |
 | 16 Unit Tests | Vitest — State, Suche, Sortierung, Pagination, Actions |
-| /health Endpoint | Für Kubernetes Liveness/Readiness Probes |
 
 ---
 
