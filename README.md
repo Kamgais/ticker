@@ -13,9 +13,9 @@
 - [Demo & Login](#-demo--login)
 - [Setup & Start](#-setup--start)
 - [Architektur & Systemdesign](#-architektur--systemdesign)
-- [Frontend — Technische Entscheidungen](#-frontend--technische-entscheidungen)
-- [Backend — Technische Entscheidungen](#-backend--technische-entscheidungen)
-- [DevOps & Containerisierung](#-devops--containerisierung)
+- [Technische Entscheidungen](#-technische-entscheidungen)
+- [DevOps & CI/CD](#-devops--cicd)
+- [Tests](#-tests)
 - [Implementierte Features](#-implementierte-features)
 - [API-Dokumentation](#-api-dokumentation)
 - [KI-Unterstützung](#-ki-unterstützung)
@@ -34,13 +34,15 @@ eigenständig zu konzipieren, zu entwickeln und zu containerisieren.
 - **Vue 3 Frontend** mit TypeScript, Pinia State Management und Tailwind CSS
 - **Go Backend** als intelligenter Proxy mit In-Memory Caching und Rate Limiting
 - **Docker Setup** mit Multi-Stage Builds, Nginx als Reverse Proxy und Docker Compose
+- **GitHub Actions CI/CD Pipeline** mit automatischen Tests und DockerHub Push
+- **16 Unit Tests** für den Pinia Store mit Vitest
 - **Alle 8 Zusatzfeatures** aus der Aufgabenstellung vollständig implementiert
 - **Optionaler Backend-Teil** in Go vollständig umgesetzt
 
 ### Mein Denkprozess — bevor ich Code geschrieben habe
 
-Bevor ich mit der Implementierung begann, habe ich die Aufgabe systematisch analysiert
-und folgende Designentscheidungen bewusst getroffen:
+Bevor ich mit der Implementierung begann, habe ich die Aufgabe systematisch
+analysiert und folgende Designentscheidungen bewusst getroffen:
 
 **1. API zuerst verstehen:**
 Ich habe die externe API direkt getestet und die echte JSON-Antwort analysiert.
@@ -50,18 +52,16 @@ aus echten Daten abgeleitet. Das verhinderte spätere Typfehler und Refactoring-
 **2. Schichtenarchitektur von Anfang an:**
 Ich habe bewusst eine klare Trennung eingeführt:
 `Types → API-Service → Pinia Store → Komponenten`
-Jede Schicht hat genau eine Verantwortung. Der Store weiß nichts von Axios,
-die Komponenten wissen nichts von der API-URL.
+Jede Schicht hat genau eine Verantwortung.
 
 **3. Warum ein Go-Backend statt direkter API-Anbindung:**
 Eine direkte Anbindung im Frontend wäre schneller gewesen — aber ich habe
-das Go-Backend bewusst hinzugefügt, um drei Probleme zu lösen:
-Caching (weniger API-Last), Kapselung (externe URL nur im Backend bekannt)
-und Schutz (Rate Limiting gegen Missbrauch).
+das Go-Backend bewusst hinzugefügt um Caching, Kapselung und Rate Limiting
+zu realisieren.
 
 **4. DevOps von Anfang an mitgedacht:**
-Dockerfiles wurden mit Multi-Stage Builds designed — nicht nachträglich
-hinzugefügt. Das zeigt sich in der Image-Größe: Backend ~10MB statt ~800MB.
+Dockerfiles wurden mit Multi-Stage Builds designed, eine CI/CD Pipeline mit
+GitHub Actions aufgebaut und Images automatisch zu DockerHub gepusht.
 
 ---
 
@@ -75,10 +75,17 @@ docker compose up --build
 
 App öffnen: **http://localhost**
 
-| Benutzer | Passwort  | Rolle  |
-|----------|-----------|--------|
-| admin    | admin123  | Admin  |
-| cyril    | cyril123  | User   |
+| Benutzer | Passwort  |
+|----------|-----------|
+| admin    | admin123  |
+| cyril    | cyril123  |
+
+Oder direkt von DockerHub:
+
+```bash
+docker pull kamgais/ticker-frontend:latest
+docker pull kamgais/ticker-backend:latest
+```
 
 ---
 
@@ -88,13 +95,11 @@ App öffnen: **http://localhost**
 
 | Tool | Version | Zweck |
 |------|---------|-------|
-| Docker Desktop | Latest | Empfohlene Ausführung (ein Befehl) |
+| Docker Desktop | Latest | Empfohlene Ausführung |
 | Node.js | 22+ | Lokale Frontend-Entwicklung |
 | Go | 1.23+ | Lokale Backend-Entwicklung |
 
 ### Option 1: Docker (empfohlen)
-
-Ein Befehl startet Frontend + Backend + Nginx:
 
 ```bash
 docker compose up --build
@@ -104,6 +109,7 @@ docker compose up --build
 |---------|-----|
 | Frontend (Nginx) | http://localhost |
 | Backend API | http://localhost:8080/api/ticker |
+| Backend Health | http://localhost:8080/health |
 
 Stoppen:
 ```bash
@@ -112,23 +118,25 @@ docker compose down
 
 ### Option 2: Lokal ohne Docker
 
-**Terminal 1 — Go Backend starten:**
+**Terminal 1 — Go Backend:**
 ```bash
 cd backend
 go run cmd/main.go
-# Backend läuft auf http://localhost:8080
 ```
 
-**Terminal 2 — Vue Frontend starten:**
+**Terminal 2 — Vue Frontend:**
 ```bash
 cd ticker-app
 npm install
 npm run dev
-# Frontend läuft auf http://localhost:5173
 ```
 
-> **Hinweis:** Bei lokaler Entwicklung zeigt das Backend `[CACHE MISS]` und
-> `[CACHE HIT]` Logs im Terminal — so ist der Cache-Status jederzeit sichtbar.
+### Option 3: Tests ausführen
+
+```bash
+cd ticker-app
+npm run test
+```
 
 ---
 
@@ -162,21 +170,26 @@ npm run dev
 
 ```
 ticker/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                 # GitHub Actions CI/CD Pipeline
 ├── ticker-app/                    # Vue 3 Frontend
 │   ├── src/
+│   │   ├── __tests__/
+│   │   │   └── ticker.store.test.ts  # 16 Unit Tests (Vitest)
 │   │   ├── types/
-│   │   │   └── ticker.ts          # TypeScript Interfaces (aus echter API abgeleitet)
+│   │   │   └── ticker.ts          # TypeScript Interfaces
 │   │   ├── services/
 │   │   │   └── tickerApi.ts       # Axios HTTP-Client mit Retry-Logik
 │   │   ├── stores/
 │   │   │   └── ticker.ts          # Pinia Store (State, Getters, Actions)
 │   │   ├── components/
-│   │   │   ├── TickerCard.vue     # Einzelne Karte mit Edit/Delete
+│   │   │   ├── TickerCard.vue     # Karte mit Edit/Delete
 │   │   │   ├── TickerList.vue     # Liste aller Karten
 │   │   │   ├── TickerModal.vue    # Erstellen/Bearbeiten Modal
 │   │   │   ├── SearchBar.vue      # Suche + Sortierung
 │   │   │   ├── Pagination.vue     # Seitennavigation
-│   │   │   ├── DarkModeToggle.vue # Dark/Light Mode Toggle
+│   │   │   ├── DarkModeToggle.vue # Dark/Light Mode
 │   │   │   ├── LoginScreen.vue    # Auth-Simulation
 │   │   │   ├── ErrorBanner.vue    # Fehleranzeige
 │   │   │   └── LoadingSpinner.vue # Ladezustand
@@ -184,233 +197,263 @@ ticker/
 │   │   │   └── HomeView.vue       # Hauptseite mit Auto-Refresh
 │   │   ├── App.vue                # Root mit Auth-Guard
 │   │   └── main.ts                # Einstiegspunkt
-│   ├── Dockerfile                 # Multi-Stage: Node Builder -> Nginx Production
+│   ├── Dockerfile                 # Multi-Stage: Node -> Nginx
 │   └── nginx.conf                 # SPA-Routing + API-Proxy
 ├── backend/                       # Go Backend
 │   ├── cmd/
-│   │   └── main.go                # HTTP-Server, Router, Middleware-Chain
+│   │   └── main.go                # HTTP-Server, Router, Middleware
 │   ├── internal/
 │   │   ├── cache/
-│   │   │   └── cache.go           # Thread-sicherer In-Memory Cache (RWMutex)
+│   │   │   └── cache.go           # Thread-sicherer In-Memory Cache
 │   │   ├── handler/
-│   │   │   └── ticker.go          # HTTP-Handler + Validierung + Upstream-Proxy
+│   │   │   └── ticker.go          # HTTP-Handler + Validierung + Proxy
 │   │   └── middleware/
 │   │       └── ratelimit.go       # IP-basierter Rate Limiter
-│   ├── go.mod
-│   └── Dockerfile                 # Multi-Stage: Go Builder -> Distroless Production
-├── docker-compose.yml             # Orchestrierung beider Services
-└── README.md
-```
-
-### Datenfluss — GET /api/ticker
-
-```
-Browser
-  |
-  |  GET http://localhost/api/ticker
-  v
-Nginx (Port 80)
-  |
-  |  proxy_pass http://backend:8080
-  v
-Go Backend (Port 8080)
-  |
-  +-- Rate Limiter pruefen --> 429 wenn ueberschritten
-  |
-  +-- Cache pruefen
-  |     +-- HIT  --> sofort antworten (< 1ms) + Header: X-Cache: HIT
-  |     +-- MISS --> weiter zur upstream API
-  |
-  |  GET https://65q02hjc6c.execute-api.eu-central-1.amazonaws.com/prod/ticker/?tickernames=wpftest
-  v
-Wettstar AWS API
-  |
-  |  JSON Response
-  v
-Go Backend
-  |
-  +-- Im Cache speichern (TTL: 30s)
-  +-- Header setzen: X-Cache: MISS
-  |
-  v
-Nginx --> Browser
+│   └── Dockerfile                 # Multi-Stage: Go -> Distroless
+└── docker-compose.yml             # Lokale Orchestrierung
 ```
 
 ---
 
-## 🖥️ Frontend — Technische Entscheidungen
+## 💡 Technische Entscheidungen
 
-### TypeScript-First Ansatz
+### 1. Warum Go-Backend statt direkter API-Anbindung im Frontend
 
-Bevor ich irgendeine Komponente gebaut habe, habe ich zuerst die echte API-Antwort
-analysiert und daraus präzise TypeScript-Interfaces abgeleitet:
+Die einfachste Lösung wäre gewesen, die externe Wettstar API direkt
+im Vue Frontend aufzurufen. Ich habe mich bewusst dagegen entschieden
+und ein Go-Backend dazwischengeschaltet — aus drei konkreten Gründen:
 
-```typescript
-// Abgeleitet aus der echten API-Antwort — nicht geraten
-export interface TickerEntry {
-  ticker_id: number      // nicht "id"
-  ticker_name: string
-  created: string        // nicht "date"
-  modified: string
-  title: string
-  message: string        // nicht "text"
-  type: number
-  creator: string        // nicht "author"
-  highlight: boolean
-  automatic: boolean
-  active: boolean
-}
-```
+**Caching:** Ohne Backend macht jeder Auto-Refresh alle 10 Sekunden
+einen neuen Request zur externen API. Mit dem Go-Backend cache ich
+die Antwort für 30 Sekunden. Das bedeutet: bei 10 gleichzeitigen
+Nutzern macht nicht jeder seinen eigenen API-Call — alle bekommen
+die gecachte Antwort in unter 1ms. Der `X-Cache: HIT` Header im
+Response zeigt jederzeit ob der Cache genutzt wurde.
 
-### Pinia Store — Pipeline-Architektur
+**Kapselung:** Die externe API-URL ist nur im Go-Backend bekannt.
+Das Frontend kennt nur `/api/ticker`. Wenn sich die externe
+API-URL ändert, muss ich nur das Backend anpassen — kein
+Frontend-Deployment nötig.
 
-Der Store implementiert eine bewusste Daten-Pipeline:
+**Rate Limiting:** Mein Rate Limiter erlaubt maximal 60 Requests
+pro Minute pro IP — darüber hinaus gibt es einen 429-Fehler,
+bevor der Request die externe API überhaupt erreicht.
 
 ```
-entries (Rohdaten aus API)
-    |
-    v
-filteredEntries (Suchfilter angewendet)
-    |
-    v
-sortedEntries (Sortierung angewendet)
-    |
-    v
-paginatedEntries (Aktuelle Seite ausgeschnitten)
+Ohne Backend:    Browser --> AWS API (jeder Request!)
+Mit Go-Backend:  Browser --> Nginx --> Go --> Cache --> AWS API (selten)
 ```
-
-Jede Schicht ist als `computed()` definiert — ändert sich `searchQuery`,
-aktualisieren sich alle drei Schichten automatisch ohne manuelle Neuberechnung.
-
-### API-Service — Retry mit exponentiellem Backoff
-
-Bei Netzwerkproblemen versucht der Service automatisch bis zu 3 Mal:
-
-```
-Versuch 1 --> Fehler --> warte 1000ms
-Versuch 2 --> Fehler --> warte 2000ms
-Versuch 3 --> Fehler --> Fehlermeldung an UI
-```
-
-### Auto-Refresh mit Countdown-Anzeige
-
-Der Auto-Refresh ist bewusst transparent gestaltet:
-- Grüner Punkt: Daten aktuell
-- Rotierendes blaues Icon: Wird gerade aktualisiert
-- Countdown zeigt, wann die nächste Aktualisierung kommt
-
-### Dark Mode — Kein Flash beim Laden
-
-Dark Mode wird in `localStorage` gespeichert und in `App.vue` sofort
-beim Start geladen — bevor Vue rendert. Das verhindert das "Flash of
-Light" beim Seitenaufruf im Dark Mode.
 
 ---
 
-## ⚙️ Backend — Technische Entscheidungen
+### 2. Pinia Pipeline-Architektur
 
-### Warum Go?
+Ich habe eine Pipeline aus `computed()`-Werten gebaut:
 
-| Kriterium | Go | Node.js |
-|-----------|----|---------| 
-| Kompiliertes Binary | Ja, ~6MB | Nein, braucht Runtime |
-| Docker Image Größe | ~10MB | ~150MB |
-| Concurrency | Goroutines (leichtgewichtig) | Event Loop |
-| Typsicherheit | Statisch typisiert | Optional |
-| Startup-Zeit | < 10ms | ~200ms |
-
-### Thread-sicherer Cache mit sync.RWMutex
-
-Der Cache verwendet `sync.RWMutex` für sichere parallele Zugriffe:
-
-```go
-// Mehrere Goroutines koennen gleichzeitig lesen
-c.mu.RLock()
-defer c.mu.RUnlock()
-
-// Aber nur eine kann schreiben
-c.mu.Lock()
-defer c.mu.Unlock()
+```
+entries           (Rohdaten aus API)
+    |
+    v
+filteredEntries   (Suchfilter angewendet)
+    |
+    v
+sortedEntries     (Sortierung angewendet)
+    |
+    v
+paginatedEntries  (Aktuelle Seite — das zeigt die UI)
 ```
 
-Ohne Mutex koennte ein gleichzeitiger Schreib- und Lesevorgang aus
-verschiedenen HTTP-Handler-Goroutines den Cache korrumpieren.
-
-### Cache-Invalidierung bei Schreiboperationen
-
-Bei POST, PATCH und DELETE wird der Cache sofort invalidiert:
-
-```go
-h.cache.Invalidate(fmt.Sprintf("ticker:%s", tickerName))
-```
-
-Der naechste GET-Request bekommt garantiert frische Daten.
-
-### Validierung im Backend
-
-```go
-// Pflichtfelder prüfen bevor upstream-Call
-func validateCreatePayload(payload map[string]interface{}) error {
-    required := []string{"title", "message", "creator"}
-    // ...
-}
-```
-
-Unnoetige Requests zur externen API mit ungueltigen Daten werden verhindert.
+Jede Schicht ist ein `computed()` — ändert sich `searchQuery`,
+aktualisieren sich alle drei Schichten automatisch und reaktiv.
+Kein manuelles Triggern, keine Race Conditions. Außerdem setze
+ich `currentPage` bei jeder Suche und Sortierung auf 1 zurück.
 
 ---
 
-## 🐳 DevOps & Containerisierung
-
-### Multi-Stage Dockerfile — Frontend
+### 3. Multi-Stage Dockerfile — ~10MB statt ~800MB
 
 ```dockerfile
-# Stage 1: Build (~800MB Node.js Image)
-FROM node:22-alpine AS builder
-RUN npm ci && npm run build
-
-# Stage 2: Production (~25MB Nginx)
-FROM nginx:alpine AS production
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-```
-
-**Resultat:** Production Image ~25MB statt ~800MB
-
-### Multi-Stage Dockerfile — Backend
-
-```dockerfile
-# Stage 1: Build (~800MB Go Image)
+# Stage 1: Bauen (800MB)
 FROM golang:1.23-alpine AS builder
-RUN CGO_ENABLED=0 GOOS=linux go build -o ticker-backend ./cmd/main.go
+RUN go build -o ticker-backend ./cmd/main.go
 
-# Stage 2: Production (~10MB Distroless)
+# Stage 2: Production (10MB)
 FROM gcr.io/distroless/static-debian12 AS production
 COPY --from=builder /app/ticker-backend .
 ```
 
-**Resultat:** Production Image ~10MB statt ~800MB  
-**Sicherheit:** Distroless enthaelt keine Shell — minimale Angriffsfläche.
+Das finale Image enthält nur das kompilierte Binary — kein
+Go-Compiler, keine Shell, kein Package Manager. Schnellere
+Deployments und minimale Angriffsfläche.
 
-### Nginx als Reverse Proxy
+---
+
+### 4. Nginx als Reverse Proxy
 
 ```nginx
-# SPA-Routing: Alle Routen auf index.html
-location / {
-    try_files $uri $uri/ /index.html;
-}
-
-# API-Proxy: /api an Go Backend weiterleiten
 location /api {
     proxy_pass http://backend:8080;
 }
-
-# Asset-Caching: 1 Jahr fuer statische Dateien
-location ~* \.(js|css|png|svg|ico)$ {
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-}
 ```
+
+Das Frontend macht relative Requests (`/api/ticker`) —
+keine hardcodierte URL, kein CORS-Problem, funktioniert
+in jeder Umgebung. Nginx cached statische Assets ein Jahr.
+
+---
+
+### 5. TypeScript-Types aus echter API abgeleitet
+
+Ich habe die API direkt getestet bevor ich Types definiert habe.
+Die Felder hießen anders als erwartet:
+
+```typescript
+ticker_id   // nicht "id"
+message     // nicht "text"
+creator     // nicht "author"
+created     // nicht "date"
+```
+
+Durch Analyse zuerst war mein Code von Anfang an korrekt —
+kein nachträgliches Refactoring nötig.
+
+---
+
+### 6. Delete — Soft Delete via PATCH active: false
+
+Die externe Wettstar API stellt keinen DELETE-Endpunkt zur
+Verfügung (`Access-Control-Allow-Methods: OPTIONS, POST`).
+
+Ich habe eine pragmatische Lösung entwickelt: Ich setze
+`active: false` via PATCH um einen Eintrag zu deaktivieren.
+Da PATCH alle Pflichtfelder benötigt, lade ich den Eintrag
+zuerst aus dem Cache, setze `active: false` und schicke
+den vollständigen Payload:
+
+```go
+target["active"] = false
+req, _ := http.NewRequest(http.MethodPatch, upstreamURL+"/ticker/", body)
+```
+
+Im Backend filtere ich beim GET alle inaktiven Einträge
+heraus — die UI zeigt ausschließlich `active: true` Einträge.
+
+```
+DELETE Button --> PATCH active: false --> Cache invalidiert
+             --> GET filtert active: false raus
+             --> Eintrag dauerhaft verschwunden ✅
+```
+
+---
+
+## 🐳 DevOps & CI/CD
+
+### GitHub Actions Pipeline
+
+Bei jedem Push auf `main` läuft automatisch:
+
+```
+Push auf main
+    |
+    +-- Job 1: Frontend
+    |     ├── TypeScript prüfen (tsc --noEmit)
+    |     ├── 16 Unit Tests (vitest run)
+    |     └── Production Build (npm run build)
+    |
+    +-- Job 2: Backend
+    |     ├── Go Build (go build ./...)
+    |     └── Go Vet (go vet ./...)
+    |
+    +-- Job 3: Docker (nur wenn Job 1+2 grün)
+          ├── Login zu DockerHub
+          ├── Frontend Image bauen + pushen
+          └── Backend Image bauen + pushen
+```
+
+**Zwei Image-Tags pro Push:**
+- `latest` — immer der neueste Stand
+- `git-sha` (z.B. `a3f2c1d`) — exakte Version für Rollbacks
+
+```bash
+# Rollback auf eine bestimmte Version
+docker pull kamgais/ticker-frontend:a3f2c1d
+```
+
+### Docker Images auf DockerHub
+
+```bash
+docker pull kamgais/ticker-frontend:latest
+docker pull kamgais/ticker-backend:latest
+```
+
+### Multi-Stage Builds
+
+| Image | Build Stage | Production Stage | Größe |
+|-------|-------------|-----------------|-------|
+| Frontend | node:22-alpine | nginx:alpine | ~25MB |
+| Backend | golang:1.23-alpine | distroless | ~10MB |
+
+### Kubernetes (mögliche Erweiterung)
+
+Als nächster Schritt könnte die App auf einem Kubernetes Cluster
+deployt werden. Dank der bestehenden Docker Images auf DockerHub
+wären folgende Manifeste schnell umsetzbar:
+
+- `Deployment` — 2 Replicas mit Liveness/Readiness Probes
+- `HPA` — Auto-Scaling bei CPU > 70% (bis 10 Pods)
+- `Ingress` — Traffic-Routing über Nginx Ingress Controller
+
+Ich habe praktische Erfahrung mit Kubernetes (Helm, HPA, CronJobs,
+StatefulSets, Ingress) aus akademischen Projekten — die Umsetzung
+wäre ein logischer nächster Schritt.
+
+---
+
+## 🧪 Tests
+
+### 16 Unit Tests — Pinia Store (Vitest)
+
+```bash
+cd ticker-app
+npm run test
+```
+
+```
+✓ hat korrekten initialen State
+✓ filtert Eintraege nach Titel
+✓ filtert Eintraege nach Ersteller
+✓ filtert Eintraege nach Nachricht
+✓ gibt alle Eintraege zurueck wenn Suche leer ist
+✓ setzt currentPage auf 1 bei neuer Suche
+✓ sortiert Eintraege nach Titel aufsteigend
+✓ sortiert Eintraege nach Titel absteigend
+✓ sortiert Eintraege nach ID aufsteigend
+✓ berechnet totalPages korrekt
+✓ gibt korrekte Eintraege fuer Seite 1 zurueck
+✓ gibt korrekte Eintraege fuer letzte Seite zurueck
+✓ laedt Eintraege erfolgreich
+✓ setzt status auf error bei API-Fehler
+✓ fuegt neuen Eintrag am Anfang der Liste hinzu
+✓ entfernt Eintrag nach deleteEntry
+
+Tests: 16 passed (16)
+```
+
+### Test-Kategorien
+
+| Kategorie | Tests | Was wird getestet |
+|-----------|-------|-------------------|
+| State | 1 | Initialer Store-Zustand |
+| Suche | 5 | Filter nach Titel, Nachricht, Ersteller |
+| Sortierung | 3 | Auf-/absteigende Sortierung |
+| Pagination | 3 | Seitenberechnung und Navigation |
+| API Actions | 4 | fetchEntries, createEntry, deleteEntry, Fehlerfall |
+
+### Test-Strategie
+
+Ich habe den API-Service komplett gemockt (`vi.mock`) — so teste
+ich den Store isoliert ohne echte HTTP-Requests. Das macht Tests
+schnell, deterministisch und unabhängig von der externen API.
 
 ---
 
@@ -423,10 +466,10 @@ location ~* \.(js|css|png|svg|ico)$ {
 | Einträge laden & anzeigen | ✅ | GET /api/ticker mit Caching |
 | Neuen Eintrag erstellen | ✅ | POST mit Formularvalidierung |
 | Eintrag bearbeiten | ✅ | PATCH mit vorausgefülltem Modal |
-| Eintrag löschen | ✅ | DELETE mit Bestätigungsdialog |
+| Eintrag löschen | ✅ | Soft Delete via PATCH active: false |
 | Responsive UI | ✅ | Tailwind CSS Breakpoints |
 | Ladezustände | ✅ | Spinner + Refresh-Indikator mit Countdown |
-| API-Fehlerbehandlung | ✅ | Deutsche Fehlermeldungen pro HTTP-Status-Code |
+| API-Fehlerbehandlung | ✅ | Deutsche Fehlermeldungen pro HTTP-Status |
 | Benutzerführung | ✅ | Lösch-Bestätigung, Validierung, Highlight-Badge |
 
 ### Zusatzfeatures (alle 8 implementiert)
@@ -434,11 +477,11 @@ location ~* \.(js|css|png|svg|ico)$ {
 | Feature | Status | Details |
 |---------|--------|---------|
 | Auto-Refresh | ✅ | Alle 10s mit sichtbarem Countdown im Header |
-| Suche / Filter | ✅ | Echtzeit-Suche in Titel, Nachricht und Ersteller |
-| Sortierung | ✅ | Nach Datum, Titel oder ID — auf-/absteigend |
-| Pagination | ✅ | 5 Einträge pro Seite mit vollständiger Navigation |
+| Suche / Filter | ✅ | Echtzeit-Suche in Titel, Nachricht, Ersteller |
+| Sortierung | ✅ | Nach Datum, Titel, ID — auf-/absteigend |
+| Pagination | ✅ | 3 Einträge pro Seite mit vollständiger Navigation |
 | Offline/Retry-Logik | ✅ | 3 Versuche mit exponentiellem Backoff |
-| Dark Mode | ✅ | Persistiert in localStorage, kein Flash beim Laden |
+| Dark Mode | ✅ | Persistiert in localStorage |
 | Auth-Simulation | ✅ | Login-Screen mit Session-Persistenz |
 | Docker-Setup | ✅ | Multi-Stage Builds + Docker Compose |
 
@@ -446,10 +489,20 @@ location ~* \.(js|css|png|svg|ico)$ {
 
 | Feature | Status | Details |
 |---------|--------|---------|
-| API-Proxy | ✅ | Kapselt externe Wettstar API vollständig |
-| In-Memory Caching | ✅ | TTL: 30s, Thread-sicher mit RWMutex + Goroutine-Cleanup |
+| API-Proxy | ✅ | Kapselt externe Wettstar API |
+| In-Memory Caching | ✅ | TTL: 30s, Thread-sicher mit RWMutex |
 | Request-Validierung | ✅ | Pflichtfelder geprüft vor upstream-Call |
-| Rate Limiting | ✅ | 60 req/min/IP mit automatischer Bereinigung |
+| Rate Limiting | ✅ | 60 req/min/IP |
+| Health Endpoint | ✅ | GET /health für Liveness Probes |
+
+### Extras (über Aufgabenstellung hinaus)
+
+| Feature | Details |
+|---------|---------|
+| GitHub Actions CI/CD | Tests + Build + DockerHub Push bei jedem Commit |
+| DockerHub Images | Automatisch gepusht mit latest + git-sha Tags |
+| 16 Unit Tests | Vitest — State, Suche, Sortierung, Pagination, Actions |
+| /health Endpoint | Für Kubernetes Liveness/Readiness Probes |
 
 ---
 
@@ -462,23 +515,24 @@ location ~* \.(js|css|png|svg|ico)$ {
 | GET | `/ticker/?tickernames=wpftest` | Alle Einträge laden |
 | POST | `/ticker/` | Neuen Eintrag erstellen |
 | PATCH | `/ticker/` | Eintrag bearbeiten |
-| DELETE | `/ticker/{id}/` | Eintrag löschen |
+| DELETE | — | Nicht unterstützt |
 
 ### Go Backend API (intern)
 
 | Method | Endpoint | Beschreibung |
 |--------|----------|--------------|
-| GET | `/api/ticker` | Einträge laden (mit Cache) |
+| GET | `/api/ticker` | Einträge laden (mit Cache, nur active: true) |
 | POST | `/api/ticker` | Eintrag erstellen (mit Validierung) |
 | PATCH | `/api/ticker` | Eintrag bearbeiten (Cache invalidieren) |
-| DELETE | `/api/ticker/{id}` | Eintrag löschen (Cache invalidieren) |
+| DELETE | `/api/ticker/{id}` | Soft Delete via PATCH active: false |
+| GET | `/health` | Health Check für Kubernetes Probes |
 
 ### Response Headers
 
 | Header | Wert | Bedeutung |
 |--------|------|-----------|
-| X-Cache | HIT | Antwort aus In-Memory Cache (< 1ms) |
-| X-Cache | MISS | Antwort direkt von upstream API |
+| X-Cache | HIT | Antwort aus Cache (< 1ms) |
+| X-Cache | MISS | Antwort von upstream API |
 
 ---
 
@@ -491,48 +545,37 @@ location ~* \.(js|css|png|svg|ico)$ {
 ### Wofür KI genutzt wurde
 
 **Architektur & Konzepte:**
-- Erklärung von Vue 3 Composition API Konzepten (ref, reactive, computed, watch)
-- Erklärung von Pinia Store-Architektur — wann Getters vs. Actions sinnvoll sind
+- Erklärung von Vue 3 Composition API (ref, reactive, computed, watch)
+- Erklärung von Pinia Store-Architektur
 - Erklärung von Go-Konzepten (Goroutines, sync.RWMutex, HTTP-Handler)
-- Diskussion der Architekturentscheidungen (warum Go-Backend, warum Caching)
+- Diskussion der Architekturentscheidungen
 
 **UI & Design:**
 - Tailwind CSS Klassen für responsives Layout und Dark Mode
-- Komponenten-Struktur (Modal mit Teleport, Pagination-Buttons)
+- Komponenten-Struktur (Modal mit Teleport, Pagination)
 - Farbschema und visuelle Hierarchie der Ticker-Karten
 
 **Code-Generierung:**
-- Grundstruktur der Go-Dateien (cache.go, ratelimit.go, handler.go)
+- Grundstruktur der Go-Dateien
 - Grundstruktur der Vue-Komponenten
-- Docker- und Nginx-Konfigurationen
+- Docker-, Nginx- und GitHub Actions Konfigurationen
 
 ### Was ich selbst erarbeitet und angepasst habe
 
-**Analyse & Entscheidungen:**
-- Die externe API selbst getestet und die echte JSON-Struktur analysiert
-- TypeScript-Interfaces aus der echten API-Antwort abgeleitet — nicht geraten
-- Entschieden welche Zusatzfeatures sinnvoll sind und wie sie zusammenspielen
-- Architekturentscheidung: Go-Backend mit Caching statt direkter API-Anbindung
+- Die externe API selbst getestet und JSON-Struktur analysiert
+- TypeScript-Interfaces aus echter API-Antwort abgeleitet
+- Delete-Problem selbst identifiziert und Lösung via PATCH entwickelt
+- Docker Build-Fehler (Go-Version) debuggt und behoben
+- Nginx-Proxy-Konfiguration debuggt (BASE_URL angepasst)
+- GitHub Secrets konfiguriert und DockerHub Integration eingerichtet
+- Alle Konzepte verstanden bevor weitergemacht wurde
 
-**Debugging & Problemlösung:**
-- Docker Build-Fehler (Go-Version 1.26.2 vs. 1.22 im Image) eigenständig analysiert
-- Nginx-Proxy-Konfiguration debuggt (BASE_URL auf relativen Pfad geändert)
-- Healthcheck-Problem mit distroless Image identifiziert und gelöst
-- GitHub-Authentifizierungsproblem eigenständig behoben
+### Fazit
 
-**Inhaltliches Verständnis:**
-- Jeden Schritt verstanden bevor weitergemacht wurde
-- Bei unklaren Konzepten (Vue Routing, Pinia, Go Concurrency) gezielt nachgefragt
-  und erst nach dem Verständnis weitergemacht
-- Code nicht blind übernommen — jeden Block gelesen, verstanden und bei Bedarf
-  angepasst
-
-### Fazit zur KI-Nutzung
-
-KI wurde als intelligentes Werkzeug und Mentor eingesetzt — nicht als Ersatz
-für eigenes Denken. Die Architekturentscheidungen, das Debugging, das Verständnis
-der Konzepte und die Problemlösung lagen bei mir. KI hat die Umsetzungsgeschwindigkeit
-erhöht, nicht die Denkarbeit ersetzt — genau wie es die Aufgabenstellung beschreibt.
+KI wurde als intelligentes Werkzeug eingesetzt — nicht als Ersatz
+für eigenes Denken. Architekturentscheidungen, Debugging und
+Problemlösung lagen bei mir. KI hat die Geschwindigkeit erhöht,
+nicht die Denkarbeit ersetzt.
 
 ---
 
@@ -540,22 +583,22 @@ erhöht, nicht die Denkarbeit ersetzt — genau wie es die Aufgabenstellung besc
 
 ### Kurzfristig
 
-1. **Tests** — Unit-Tests für den Pinia Store (Vitest) und Go-Handler (testing package)
-2. **Optimistic Updates** — UI sofort aktualisieren, bei API-Fehler zurückrollen
-3. **Umgebungsvariablen** — API-URL und Cache-TTL über `.env` konfigurierbar
+1. **E2E Tests** — Cypress für vollständige Browser-Tests
+2. **Optimistic Updates** — UI sofort aktualisieren, bei Fehler zurückrollen
+3. **Umgebungsvariablen** — API-URL über `.env` konfigurierbar
 
 ### Mittelfristig
 
 4. **WebSocket** — Echtzeit-Updates statt Polling alle 10 Sekunden
-5. **CI/CD Pipeline** — GitHub Actions für Tests, Docker-Build und Deployment
-6. **HTTPS** — SSL-Zertifikat mit Let's Encrypt
+5. **HTTPS** — SSL-Zertifikat mit Let's Encrypt
+6. **Staging Environment** — Separate Pipeline für Staging vs. Production
 
 ### Langfristig
 
-7. **Backend Persistenz** — Eigene Datenbank im Go-Backend für Offline-Modus
-   und bessere Businesslogik
-8. **Kubernetes Deployment** — Helm Chart für skalierbares Deployment
-   auf einem Kubernetes Cluster (EKS)
+7. **Backend Persistenz** — Eigene Datenbank für Offline-Modus
+8. **Kubernetes Deployment** — Dank der bestehenden DockerHub Images
+   wäre ein Kubernetes Deployment mit HPA und Ingress der nächste
+   logische Schritt für produktionsreife Skalierung.
 
 ---
 
@@ -565,8 +608,8 @@ erhöht, nicht die Denkarbeit ersetzt — genau wie es die Aufgabenstellung besc
 M.Sc. Informatik (Cloud Computing & AWS) — TH Brandenburg  
 3+ Jahre Erfahrung in Full-Stack-Entwicklung und Cloud-Architektur
 
-| Kontakt | Link |
-|---------|------|
+| Kontakt | |
+|---------|---|
 | Email | cyrilkamgais1203@gmail.com |
 | Telefon | +49 176 68484380 |
 | LinkedIn | [cyril-kamgais-totso-a86491207](https://linkedin.com/in/cyril-kamgais-totso-a86491207) |
