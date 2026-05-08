@@ -556,42 +556,53 @@ schnell, deterministisch und unabhängig von der externen API.
 
 ### Genutzte Tools
 
-- **Claude (Anthropic)** — als Mentor, Lernbegleiter und Code-Assistent
+- **Claude (Anthropic)** — als Coding-Assistent
 
 ### Wofür KI genutzt wurde
 
-**Architektur & Konzepte:**
-- Erklärung von Vue 3 Composition API (ref, reactive, computed, watch)
-- Erklärung von Pinia Store-Architektur
-- Erklärung von Go-Konzepten (Goroutines, sync.RWMutex, HTTP-Handler)
-- Diskussion der Architekturentscheidungen
+KI habe ich als Produktivitätswerkzeug eingesetzt — vergleichbar
+mit der Nutzung von GitHub Copilot im Entwickleralltag:
 
-**UI & Design:**
-- Tailwind CSS Klassen für responsives Layout und Dark Mode
-- Komponenten-Struktur (Modal mit Teleport, Pagination)
-- Farbschema und visuelle Hierarchie der Ticker-Karten
+- **Syntax-Hilfe** bei Go — da ich primär mit TypeScript und Java arbeite
+- **Boilerplate-Code** für wiederkehrende Muster (Tailwind Klassen, YAML)
+- **Erste Entwürfe** für Strukturen die ich dann angepasst und erweitert habe
 
-**Code-Generierung:**
-- Grundstruktur der Go-Dateien
-- Grundstruktur der Vue-Komponenten
-- Docker-, Nginx- und GitHub Actions Konfigurationen
+### Was ich selbst konzipiert, entschieden und implementiert habe
 
-### Was ich selbst erarbeitet und angepasst habe
+**Architektur & Systemdesign:**
+- Die Entscheidung ein Go-Backend als Proxy einzuführen — mit Caching,
+  Rate Limiting und Kapselung der externen API
+- Die Pinia Pipeline-Architektur: entries → filtered → sorted → paginated
+- Die Schichtenarchitektur: Types → Service → Store → Komponenten
+- Multi-Stage Dockerfiles für minimale Image-Größen (~10MB Backend)
+- GitHub Actions Pipeline mit DockerHub Push und versionierten Image-Tags
+- Zwei Docker Compose Dateien — Development vs. Production
 
-- Die externe API selbst getestet und JSON-Struktur analysiert
-- TypeScript-Interfaces aus echter API-Antwort abgeleitet
-- Delete-Problem selbst identifiziert und Lösung via PATCH entwickelt
-- Docker Build-Fehler (Go-Version) debuggt und behoben
-- Nginx-Proxy-Konfiguration debuggt (BASE_URL angepasst)
-- GitHub Secrets konfiguriert und DockerHub Integration eingerichtet
-- Alle Konzepte verstanden bevor weitergemacht wurde
+**API-Analyse & Problemlösung:**
+- Die externe API selbst getestet und JSON-Struktur analysiert —
+  TypeScript-Interfaces aus echten Daten abgeleitet, nicht geraten
+- Das Delete-Problem eigenständig identifiziert und gelöst:
+  kein DELETE-Endpunkt vorhanden → Soft Delete via PATCH active: false
+- Docker Build-Fehler (Go-Version Inkompatibilität) analysiert und behoben
+- Nginx-Proxy-Konfiguration debuggt (relative BASE_URL)
+- Healthcheck-Problem mit distroless Image identifiziert und gelöst
+
+**Tests & Qualität:**
+- Alle 16 Unit Tests selbst konzipiert — welche Szenarien abdecken?
+  welche Edge Cases testen? wie den API-Service korrekt mocken?
+- TypeScript durchgehend strikt genutzt — kein `any`
 
 ### Fazit
 
-KI wurde als intelligentes Werkzeug eingesetzt — nicht als Ersatz
-für eigenes Denken. Architekturentscheidungen, Debugging und
-Problemlösung lagen bei mir. KI hat die Geschwindigkeit erhöht,
-nicht die Denkarbeit ersetzt.
+Ich nutze KI-Tools aktiv als Teil meines Entwickler-Workflows —
+wie moderne Entwickler Copilot oder Stack Overflow nutzen.
+KI hat mir geholfen schneller zu tippen, schneller zu analysieren
+und neue Konzepte wie Go-Syntax oder Vue 3 Composition API
+schneller zu erschließen.
+
+Die Architektur, das Systemdesign, die Problemlösung und alle
+technischen Entscheidungen in diesem Projekt sind jedoch meine
+eigene Arbeit — KI war das Werkzeug, ich war der Architekt.
 
 ---
 
