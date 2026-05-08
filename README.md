@@ -116,7 +116,23 @@ Stoppen:
 docker compose down
 ```
 
-### Option 2: Lokal ohne Docker
+### Option 2: Production — direkt von DockerHub
+
+Kein lokales Bauen nötig — Images werden direkt von DockerHub geholt:
+
+```bash
+docker compose -f docker-compose.prod.yml up
+```
+
+App öffnen: **http://localhost**
+
+| | docker-compose.yml | docker-compose.prod.yml |
+|--|-------------------|------------------------|
+| Images | Lokal gebaut | Von DockerHub geholt |
+| Geschwindigkeit | ~2-3 Minuten | ~30 Sekunden |
+| Zweck | Entwicklung | Production / Demo |
+
+### Option 3: Lokal ohne Docker
 
 **Terminal 1 — Go Backend:**
 ```bash
@@ -131,7 +147,7 @@ npm install
 npm run dev
 ```
 
-### Option 3: Tests ausführen
+### Option 4: Tests ausführen
 
 ```bash
 cd ticker-app
