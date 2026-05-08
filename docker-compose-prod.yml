@@ -1,0 +1,27 @@
+version: '3.9'
+
+# Production Docker Compose — nutzt fertige Images von DockerHub
+# Kein lokales Bauen nötig!
+#
+# Verwendung:
+#   docker compose -f docker-compose.prod.yml up
+
+services:
+
+  # ── Go Backend ──────────────────────────────────────
+  backend:
+    image: kamgais/ticker-backend:latest
+    container_name: ticker-backend-prod
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  # ── Vue Frontend ────────────────────────────────────
+  frontend:
+    image: kamgais/ticker-frontend:latest
+    container_name: ticker-frontend-prod
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
