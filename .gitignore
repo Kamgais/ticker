@@ -1,0 +1,11 @@
+# Frontend
+ticker-app/node_modules
+ticker-app/dist
+ticker-app/.env
+
+# Backend
+backend/ticker-backend
+
+# System
+.DS_Store
+Thumbs.db
