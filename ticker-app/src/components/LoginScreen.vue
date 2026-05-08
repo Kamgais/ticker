@@ -25,7 +25,6 @@ async function handleLogin() {
   loading.value = true
   error.value = ''
 
-  // Simulierte Verzögerung wie echte API
   await new Promise(resolve => setTimeout(resolve, 800))
 
   const user = FAKE_USERS.find(

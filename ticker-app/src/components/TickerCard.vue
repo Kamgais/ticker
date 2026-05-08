@@ -34,7 +34,6 @@ async function handleDelete() {
 <template>
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-100 dark:border-gray-700">
 
-    <!-- Header -->
     <div class="flex items-start justify-between gap-2 mb-2">
       <h2 class="font-bold text-gray-800 dark:text-white text-lg">
         {{ entry.title }}
@@ -47,21 +46,16 @@ async function handleDelete() {
       </span>
     </div>
 
-    <!-- Message -->
     <p class="text-gray-600 dark:text-gray-300 mb-3">
       {{ entry.message }}
     </p>
 
-    <!-- Footer -->
     <div class="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
       <span>👤 {{ entry.creator }}</span>
       <span>🕐 {{ formatDate(entry.created) }}</span>
     </div>
 
-    <!-- Aktionen -->
     <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-
-      <!-- Bearbeiten -->
       <button
         @click="isEditModalOpen = true"
         class="flex-1 px-3 py-1.5 text-sm rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -69,7 +63,6 @@ async function handleDelete() {
         ✏️ Bearbeiten
       </button>
 
-      <!-- Löschen -->
       <button
         v-if="!showDeleteConfirm"
         @click="showDeleteConfirm = true"
@@ -78,7 +71,6 @@ async function handleDelete() {
         🗑️ Löschen
       </button>
 
-      <!-- Löschen Bestätigung -->
       <div v-else class="flex-1 flex gap-1">
         <button
           @click="showDeleteConfirm = false"
@@ -98,7 +90,6 @@ async function handleDelete() {
     </div>
   </div>
 
-  <!-- Edit Modal -->
   <TickerModal
     :is-open="isEditModalOpen"
     :entry-to-edit="entry"

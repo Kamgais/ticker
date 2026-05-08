@@ -16,13 +16,11 @@ const (
 	tickerName  = "wpftest"
 )
 
-// TickerHandler verwaltet alle Ticker-Anfragen
 type TickerHandler struct {
 	cache      *cache.Cache
 	httpClient *http.Client
 }
 
-// New erstellt einen neuen TickerHandler
 func New(c *cache.Cache) *TickerHandler {
 	return &TickerHandler{
 		cache: c,
@@ -32,11 +30,9 @@ func New(c *cache.Cache) *TickerHandler {
 	}
 }
 
-// GetEntries gibt alle Ticker-Einträge zurück (mit Caching)
 func (h *TickerHandler) GetEntries(w http.ResponseWriter, r *http.Request) {
 	cacheKey := fmt.Sprintf("ticker:%s", tickerName)
 
-	// Cache prüfen
 	if cached, found := h.cache.Get(cacheKey); found {
 		log.Println("[CACHE HIT] GET /ticker")
 		w.Header().Set("Content-Type", "application/json")
@@ -45,7 +41,6 @@ func (h *TickerHandler) GetEntries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Upstream API aufrufen
 	log.Println("[CACHE MISS] GET /ticker — rufe upstream API")
 	url := fmt.Sprintf("%s/ticker/?tickernames=%s", upstreamURL, tickerName)
 	resp, err := h.httpClient.Get(url)
@@ -61,7 +56,6 @@ func (h *TickerHandler) GetEntries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Im Cache speichern
 	h.cache.Set(cacheKey, body)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -69,7 +63,6 @@ func (h *TickerHandler) GetEntries(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-// CreateEntry erstellt einen neuen Eintrag mit Validierung
 func (h *TickerHandler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 	var payload map[string]interface{}
 
@@ -78,7 +71,6 @@ func (h *TickerHandler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validierung
 	if err := validateCreatePayload(payload); err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusBadRequest)
 		return
@@ -87,7 +79,6 @@ func (h *TickerHandler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 	// ticker_name immer setzen
 	payload["ticker_name"] = tickerName
 
-	// An upstream weiterleiten
 	body, _ := json.Marshal(payload)
 	resp, err := h.httpClient.Post(
 		fmt.Sprintf("%s/ticker/", upstreamURL),
@@ -100,7 +91,6 @@ func (h *TickerHandler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	// Cache invalidieren — neue Daten vorhanden
 	h.cache.Invalidate(fmt.Sprintf("ticker:%s", tickerName))
 
 	respBody, _ := io.ReadAll(resp.Body)
@@ -109,7 +99,6 @@ func (h *TickerHandler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 	w.Write(respBody)
 }
 
-// UpdateEntry bearbeitet einen Eintrag
 func (h *TickerHandler) UpdateEntry(w http.ResponseWriter, r *http.Request) {
 	var payload map[string]interface{}
 
@@ -118,7 +107,6 @@ func (h *TickerHandler) UpdateEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ticker_id muss vorhanden sein
 	if _, ok := payload["ticker_id"]; !ok {
 		http.Error(w, `{"error": "ticker_id fehlt"}`, http.StatusBadRequest)
 		return
@@ -138,7 +126,6 @@ func (h *TickerHandler) UpdateEntry(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	// Cache invalidieren
 	h.cache.Invalidate(fmt.Sprintf("ticker:%s", tickerName))
 
 	respBody, _ := io.ReadAll(resp.Body)
@@ -147,7 +134,6 @@ func (h *TickerHandler) UpdateEntry(w http.ResponseWriter, r *http.Request) {
 	w.Write(respBody)
 }
 
-// DeleteEntry löscht einen Eintrag
 func (h *TickerHandler) DeleteEntry(w http.ResponseWriter, r *http.Request) {
 	tickerID := r.PathValue("id")
 	if tickerID == "" {
@@ -167,13 +153,11 @@ func (h *TickerHandler) DeleteEntry(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	// Cache invalidieren
 	h.cache.Invalidate(fmt.Sprintf("ticker:%s", tickerName))
 
 	w.WriteHeader(resp.StatusCode)
 }
 
-// validateCreatePayload prüft Pflichtfelder
 func validateCreatePayload(payload map[string]interface{}) error {
 	required := []string{"title", "message", "creator"}
 	for _, field := range required {

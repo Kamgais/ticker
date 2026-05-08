@@ -37,8 +37,6 @@ onUnmounted(() => {
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
 
-    <!-- Header -->
-     <!-- Header -->
     <header class="bg-white dark:bg-gray-800 shadow px-6 py-4 flex items-center justify-between">
       <h1 class="text-2xl font-bold text-gray-800 dark:text-white">
         📰 Ticker
@@ -47,7 +45,6 @@ onUnmounted(() => {
 
       <div class="flex items-center gap-4">
 
-        <!-- Refresh Indikator -->
         <div class="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500">
           <svg
             v-if="store.status === 'loading'"
@@ -61,9 +58,7 @@ onUnmounted(() => {
           <span v-if="store.status === 'loading'">Aktualisiere...</span>
           <span v-else>Refresh in {{ countdown }}s</span>
         </div>
-           <!-- Dark Mode Toggle -->
         <DarkModeToggle />
-        <!-- Neuer Eintrag Button -->
         <button
           @click="isModalOpen = true"
           class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-sm"
@@ -75,7 +70,6 @@ onUnmounted(() => {
     </header>
 
 
-    <!-- Main -->
     <main class="max-w-3xl mx-auto px-4 py-8 space-y-4">
       <ErrorBanner />
       <SearchBar />
@@ -83,7 +77,6 @@ onUnmounted(() => {
       <TickerList v-else />
     </main>
 
-     <!-- Modal -->
     <TickerModal
       :is-open="isModalOpen"
       @close="isModalOpen = false"

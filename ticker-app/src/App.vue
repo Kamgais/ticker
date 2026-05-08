@@ -8,14 +8,12 @@ const isLoggedIn = ref(false)
 const currentUser = ref('')
 
 onMounted(() => {
-  // Gespeicherte Session laden
   const savedUser = localStorage.getItem('auth_user')
   if (savedUser) {
     currentUser.value = savedUser
     isLoggedIn.value = true
   }
 
-  // Dark Mode wiederherstellen
   if (localStorage.getItem('darkMode') === 'true') {
     document.documentElement.classList.add('dark')
   }
@@ -34,12 +32,9 @@ function handleLogout() {
 </script>
 
 <template>
-  <!-- Login Screen -->
   <LoginScreen v-if="!isLoggedIn" @login="handleLogin" />
 
-  <!-- App -->
   <div v-else>
-    <!-- Logout Bar -->
     <div class="bg-gray-100 dark:bg-gray-950 px-6 py-1.5 flex items-center justify-end gap-3 text-sm">
       <span class="text-gray-500 dark:text-gray-400">
         👤 {{ currentUser }}

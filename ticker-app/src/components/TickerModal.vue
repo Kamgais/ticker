@@ -15,23 +15,19 @@ const emit = defineEmits<{
 const store = useTickerStore()
 const loading = ref(false)
 
-// Formular-Felder
 const title = ref('')
 const message = ref('')
 const creator = ref('')
 const highlight = ref(false)
 
-// Wenn Modal geöffnet wird — Felder befüllen
 watch(() => props.isOpen, (open) => {
   if (open) {
     if (props.entryToEdit) {
-      // Bearbeiten: bestehende Werte laden
       title.value = props.entryToEdit.title
       message.value = props.entryToEdit.message
       creator.value = props.entryToEdit.creator
       highlight.value = props.entryToEdit.highlight
     } else {
-      // Neu erstellen: Felder leeren
       title.value = ''
       message.value = ''
       creator.value = ''
@@ -46,7 +42,6 @@ async function handleSubmit() {
   loading.value = true
   try {
     if (props.entryToEdit) {
-      // PATCH
       await store.updateEntry({
         ticker_id: props.entryToEdit.ticker_id,
         title: title.value.trim(),
@@ -57,7 +52,6 @@ async function handleSubmit() {
         active: props.entryToEdit.active,
       })
     } else {
-      // POST
       await store.createEntry({
         ticker_name: 'wpftest',
         title: title.value.trim(),
@@ -77,17 +71,13 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <!-- Backdrop -->
   <Teleport to="body">
     <div
       v-if="isOpen"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       @click.self="emit('close')"
     >
-      <!-- Modal Box -->
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
-
-        <!-- Header -->
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-xl font-bold text-gray-800 dark:text-white">
             {{ entryToEdit ? 'Eintrag bearbeiten' : 'Neuer Eintrag' }}
@@ -100,10 +90,7 @@ async function handleSubmit() {
           </button>
         </div>
 
-        <!-- Formular -->
         <form @submit.prevent="handleSubmit" class="space-y-4">
-
-          <!-- Titel -->
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Titel *
@@ -116,7 +103,6 @@ async function handleSubmit() {
             />
           </div>
 
-          <!-- Nachricht -->
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Nachricht *
@@ -129,7 +115,6 @@ async function handleSubmit() {
             />
           </div>
 
-          <!-- Ersteller -->
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Ersteller *
@@ -142,7 +127,6 @@ async function handleSubmit() {
             />
           </div>
 
-          <!-- Highlight Toggle -->
           <div class="flex items-center gap-3">
             <input
               v-model="highlight"
@@ -155,7 +139,6 @@ async function handleSubmit() {
             </label>
           </div>
 
-          <!-- Buttons -->
           <div class="flex gap-3 pt-2">
             <button
               type="button"

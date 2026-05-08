@@ -11,7 +11,6 @@ import type {
 
 export const useTickerStore = defineStore('ticker', () => {
 
-  // ── State ──────────────────────────────────────────
   const entries = ref<TickerEntry[]>([])
   const status = ref<AppStatus>('idle')
   const errorMessage = ref<string | null>(null)
@@ -20,9 +19,6 @@ export const useTickerStore = defineStore('ticker', () => {
   const currentPage = ref(1)
   const pageSize = ref(3)
 
-  // ── Getters ────────────────────────────────────────
-
-  // 1. Gefilterte Einträge nach Suchbegriff
   const filteredEntries = computed(() => {
     const q = searchQuery.value.toLowerCase().trim()
     if (!q) return entries.value
@@ -33,7 +29,6 @@ export const useTickerStore = defineStore('ticker', () => {
     )
   })
 
-  // 2. Sortierte Einträge
   const sortedEntries = computed(() => {
     return [...filteredEntries.value].sort((a, b) => {
       const field = sortConfig.value.field
@@ -52,7 +47,6 @@ export const useTickerStore = defineStore('ticker', () => {
     })
   })
 
-  // 3. Pagination
   const totalPages = computed(() =>
     Math.ceil(sortedEntries.value.length / pageSize.value)
   )
@@ -62,8 +56,6 @@ export const useTickerStore = defineStore('ticker', () => {
     const end = start + pageSize.value
     return sortedEntries.value.slice(start, end)
   })
-
-  // ── Actions ────────────────────────────────────────
 
   async function fetchEntries() {
     status.value = 'loading'
@@ -110,7 +102,7 @@ export const useTickerStore = defineStore('ticker', () => {
 
   function setSearch(query: string) {
     searchQuery.value = query
-    currentPage.value = 1 // zurück auf Seite 1 bei neuer Suche
+    currentPage.value = 1
   }
 
   function setSort(config: SortConfig) {
@@ -123,7 +115,6 @@ export const useTickerStore = defineStore('ticker', () => {
   }
 
   return {
-    // State
     entries,
     status,
     errorMessage,
@@ -131,12 +122,10 @@ export const useTickerStore = defineStore('ticker', () => {
     sortConfig,
     currentPage,
     pageSize,
-    // Getters
     filteredEntries,
     sortedEntries,
     totalPages,
     paginatedEntries,
-    // Actions
     fetchEntries,
     createEntry,
     updateEntry,

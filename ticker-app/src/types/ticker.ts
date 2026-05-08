@@ -1,4 +1,3 @@
-// Echte API-Antwort von der Wettstar API
 export interface TickerEntry {
   ticker_id: number
   ticker_name: string
@@ -14,7 +13,6 @@ export interface TickerEntry {
   active: boolean
 }
 
-// Payload beim Erstellen eines neuen Eintrags
 export interface CreateEntryPayload {
   ticker_name: string
   title: string
@@ -24,7 +22,6 @@ export interface CreateEntryPayload {
   highlight: boolean
 }
 
-// Payload beim Bearbeiten eines Eintrags
 export interface UpdateEntryPayload {
   ticker_id: number
   title: string
@@ -35,7 +32,6 @@ export interface UpdateEntryPayload {
   active: boolean
 }
 
-// Sortierung
 export type SortField = 'created' | 'title' | 'ticker_id'
 export type SortDirection = 'asc' | 'desc'
 
@@ -44,5 +40,4 @@ export interface SortConfig {
   direction: SortDirection
 }
 
-// Status der App
 export type AppStatus = 'idle' | 'loading' | 'success' | 'error'
