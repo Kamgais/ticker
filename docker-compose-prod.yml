@@ -10,7 +10,7 @@ services:
 
   # ── Go Backend ──────────────────────────────────────
   backend:
-    image: kamgais/ticker-backend:latest
+    image: kamgaist/ticker-backend:latest
     container_name: ticker-backend-prod
     ports:
       - "8080:8080"
@@ -18,7 +18,7 @@ services:
 
   # ── Vue Frontend ────────────────────────────────────
   frontend:
-    image: kamgais/ticker-frontend:latest
+    image: kamgaist/ticker-frontend:latest
     container_name: ticker-frontend-prod
     ports:
       - "80:80"
