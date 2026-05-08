@@ -1,0 +1,81 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+
+  # ── Frontend Tests & Build ─────────────────────────
+  frontend:
+    name: Frontend (Vue 3 + TypeScript)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: ticker-app/package-lock.json
+
+      - name: Dependencies installieren
+        working-directory: ticker-app
+        run: npm ci
+
+      - name: TypeScript prüfen
+        working-directory: ticker-app
+        run: npx tsc --noEmit
+
+      - name: Tests ausführen
+        working-directory: ticker-app
+        run: npm run test
+
+      - name: Production Build
+        working-directory: ticker-app
+        run: npm run build
+
+  # ── Backend Build ──────────────────────────────────
+  backend:
+    name: Backend (Go)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Go einrichten
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache-dependency-path: backend/go.sum
+
+      - name: Dependencies installieren
+        working-directory: backend
+        run: go mod download
+
+      - name: Build prüfen
+        working-directory: backend
+        run: go build ./...
+
+      - name: Vet prüfen
+        working-directory: backend
+        run: go vet ./...
+
+  # ── Docker Build ───────────────────────────────────
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Docker Compose Build
+        run: docker compose build
